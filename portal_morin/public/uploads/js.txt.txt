@@ -1,0 +1,548 @@
+var activarSeriacion=1;
+var clvcar=0;
+var clvuni=0;
+var clvlar=0;
+var creaut=0;
+var creapr=0;
+var actual=0;
+var editar=0;
+var nomalu;
+
+
+function inicio(clave_unica)
+{
+	$('#leyendas').hide();
+	$('#cargando_plan').hide();
+	$('#horario').hide();
+		
+	clvuni=clave_unica;
+	
+	buscar_alumno();
+}
+
+
+function buscar_alumno() 
+{
+	$('#principal').css('height', '600px');
+	$('#cargando_plan').show();
+	
+	$('#plan_estudios').hide();
+	$('#horario').hide();
+		
+	$.ajax({
+		url: "ajax/buscar_alumno.php",
+		type: "post",
+		data: {"clvuni":clvuni},
+		dataType: 'json',
+		success: function(data)
+		{
+			//console.log(data);
+					
+			if (data.status == "OK")
+			{
+				// Datos de contacto
+				$("#mailpri").val(data.alumno.mailpri);
+				$("#maildompri").val(data.alumno.maildompri);
+				$("#mailsec").val(data.alumno.mailsec);
+				$("#maildomsec").val(data.alumno.maildomsec);
+				$("#mailuaslp").val(data.alumno.mailuaslp);
+				$("#maildomuaslp").val(data.alumno.maildomuaslp);
+				$("#telpar").val(data.alumno.telpar);
+				$("#telcel").val(data.alumno.telcel);
+								
+				$("#foto").attr("src", data.alumno.foto);
+				
+				nomalu=data.alumno.nombre;
+				
+				$('#clvuni').html('&nbsp; '+data.alumno.clvuni);
+				$('#clvfac').html('&nbsp; '+data.alumno.clvfac);
+				$('#nombre_alumno').html('&nbsp; '+data.alumno.nombre);
+				$('#carrera').html('&nbsp; '+data.alumno.nomcar);
+				
+				$('#orden').html('&nbsp; '+data.alumno.orden);
+				$('#fecha').html('&nbsp; '+data.alumno.fecha);
+				$('#hora').html('&nbsp; '+data.alumno.hora);
+				
+				$('#tot_cre_aut').html('<b>'+data.alumno.tot_cre_aut+'</b>');
+				
+				// Encuesta de satisfaccion
+				var proceso='[value='+data.encuesta.proceso+']';
+				var uso='[value='+data.encuesta.uso+']';
+				var uso_tipo='[value='+data.encuesta.uso_tipo+']';
+				var proceso_tipo='[value='+data.encuesta.proceso_tipo+']';
+				
+				$('input:radio[name=proceso]').filter(proceso).prop('checked', true);
+				$('input:radio[name=sistema]').filter(uso).prop('checked', true);
+				
+				if (data.encuesta.uso_tipo>0)
+				{
+					// Boton de pregunta
+					val_ps=1;
+					
+					$(':radio[name="p_sistema"]').filter([value=1]).prop('checked', true);
+					$('#lab_sist-si').addClass('btn-success');
+					$('#lab_sist-no').removeClass('btn-danger');
+					$('#lab_sist-no').addClass('btn-default');
+					
+					// Boton de tipo de pregunta
+					$(':radio[name="t_sistema"]').filter(uso_tipo).prop('checked', true);
+					
+					switch (data.encuesta.uso_tipo)
+					{
+						case '1': $('#lab_sist-fe').addClass('btn-success'); break;
+						case '2': $('#lab_sist-qu').addClass('btn-danger'); break;
+						case '3': $('#lab_sist-su').addClass('btn-warning'); break;
+					}						
+					
+					$('textarea#comentario_sistema').val(data.encuesta.uso_comenta);
+					
+					$('#tipo_sistema').show();
+					$('#comentario_sistema').show();
+				}
+				else
+				{
+					val_ps=0;
+					
+					$(':radio[name="p_sistema"]').filter([value=0]).prop('checked', true);
+					$('#lab_sist-si').removeClass('btn-success');
+					$('#lab_sist-si').addClass('btn-default');
+					$('#lab_sist-no').addClass('btn-danger');
+				}
+				
+				
+				if (data.encuesta.proceso_tipo>0)
+				{
+					// Boton de pregunta
+					val_pp=1;
+					
+					$(':radio[name="p_proceso"]').filter([value=1]).prop('checked', true);
+					$('#lab_proc-si').addClass('btn-success');
+					$('#lab_proc-no').removeClass('btn-danger');
+					$('#lab_proc-no').addClass('btn-default');
+					
+					// Boton de tipo de pregunta
+					$(':radio[name="t_proceso"]').filter(proceso_tipo).prop('checked', true);
+					
+					switch (data.encuesta.proceso_tipo)
+					{
+						case '1': $('#lab_proc-fe').addClass('btn-success'); break;
+						case '2': $('#lab_proc-qu').addClass('btn-danger'); break;
+						case '3': $('#lab_proc-su').addClass('btn-warning'); break;
+					}						
+					
+					$('textarea#comentario_proceso').val(data.encuesta.proceso_comenta);
+					
+					$('#tipo_proceso').show();
+					$('#comentario_proceso').show();
+				}
+				else
+				{
+					val_pp=0;
+					
+					$(':radio[name="p_proceso"]').filter([value=0]).prop('checked', true);
+					$('#lab_proc-si').removeClass('btn-success');
+					$('#lab_proc-si').addClass('btn-default');
+					$('#lab_proc-no').addClass('btn-danger');
+				}
+				
+				
+				
+				// Checar si ya actulizo datos
+				actual=data.alumno.actual;
+				
+				if (data.alumno.actual==0)
+				{
+					$('#tituloContacto').html('Informaci&oacute;n de contacto del alumno &nbsp; &nbsp; &nbsp; &nbsp; <font color="RED" size="3"><span class="glyphicon glyphicon-thumbs-down"></span> No actualizado</font>');
+				}
+				else
+				{
+					$('#tituloContacto').html('Informaci&oacute;n de contacto del alumno &nbsp; &nbsp; &nbsp; &nbsp; <font color="GREEN" size="3"><span class="glyphicon glyphicon-thumbs-up"></span> Actualizado</font>');
+				}
+				
+				
+				clvlar=data.alumno.clvfac;
+				clvcar=data.alumno.clvcar;
+				creaut=data.alumno.tot_cre_aut;
+								
+				// Cargar plan de estudios
+				cargar_plan_estudios();
+												
+				$('#error').html('');
+				$('#clave_unica').val('');				
+				$('#clave_unica').focus();
+			}
+			else
+			{
+				if (data.clave_larga)
+				{
+					bootbox.alert('<div><font color="#FF0000"><h4><b>Atenci&oacute;n!</b></h4></font><br><h5>La clave larga del alumno ('+data.clave_larga+') contiene digitos incorrectos. <br><br>La clave de la carrera no existe...</h5></div>', function() { });
+				}
+				
+				$('#error').html(data.status);
+				
+				$('#cargando_plan').hide();
+				$('#leyendas').hide();
+			}
+		},
+		error:function()
+		{
+			alert("Error al buscar los datos del alumno: "+clvuni);
+		}
+	});	
+}
+
+
+function cargar_plan_estudios()
+{
+	$('#cargando_plan').show();
+
+	$.ajax({
+		url: "ajax/crear_plan_estudios.php",
+		type: "post",
+		data: {"clvuni":clvuni,"clvlar":clvlar, "clvcar":clvcar,"creaut":creaut,"seriacion":activarSeriacion},
+		dataType: 'json',
+		success: function(data)
+		{
+			if (data.status == "OK")
+			{
+				$('#tot_mat_ins').html('<b>'+data.plan.tot_mat_ins+'</b>');
+				$('#tot_cre_ins').html('<b>'+data.plan.tot_cre_ins+'</b>');
+				$('#tot_cre_apr').html('<b>'+data.plan.creditos_aprobados+'</b>');	
+				
+				$('#plan_estudios').html(data.plan.plan_estudios);
+				
+				// Mostrar plan de estudios cargado
+				$('#principal').css('height', '210px');
+				
+				$('#leyendas').show();
+				$('#plan_estudios').show();
+				
+				// Cargar cuadricula del horario y laboratoios
+				cargar_horario(clvuni);
+				
+				editar=data.plan.editar;
+				
+				if (data.plan.editar==0)
+				{
+					bootbox.alert('<h4><font color="RED"><b>Atenci&oacute;n !</b></font></h4><br><h5>Tu inscripci&oacute;n de materias ha concluido debido a:<br><br><blockquote><ol type="1"><li>La impresi&oacute;n de tu horario ya ha sido registrada en sesiones anteriores, o</li><br><li>Han transcurrido tus 12 horas autorizadas para realizar la inscripci&oacute;n.</li></ol></blockquote>Solo podr&aacute;s consultar e imprimir nuevamente tu horario.', function() { });
+				}
+			}
+			else
+			{
+				alert(data.status);
+				
+				$('#cargando_plan').hide();
+				$('#horario').hide();
+			}
+		},
+		error:function()
+		{
+			alert("Error al cargar el plan de estudios para: "+clvuni);
+		}
+	});	
+}
+
+
+function cargar_horario(clvuni, clvlab, labdis)
+{
+	$('#cargando_plan').show();
+		
+	$.ajax({
+		url: "ajax/crear_cuadricula_horario.php",
+		type: "post",
+		data: {"clvuni":clvuni,"clvlab":clvlab,"labdis":labdis,"nomalu":nomalu},
+		dataType: 'json',
+		success: function(data)
+		{
+			if (data.status == "OK")
+			{				
+				$('#horario').html(data.horario.tabla);
+				
+				// Mostrar cuadricula
+				$('#cargando_plan').hide();
+				
+				$('#horario').show();
+			}
+			else
+			{
+				alert(data.status);
+				
+				$('#cargando_plan').hide();
+				$('#horario').hide();
+			}
+		},
+		error:function()
+		{
+			alert("Error al cargar el plan de estudios, intente otra vez...");
+		}
+	});	
+}
+
+
+var costo=0;
+
+
+function bajaMateriaLaboratorio(clvmat, grumat, tipo) 
+{
+	var mensaje;
+	var check_pago=null;
+	
+	if (tipo=='T')
+	{
+		mensaje='<div align="justify"><font color="#FF0000"><h4><b>Advertencia!</b></h4></font><h5><br>Baja de materia: '+clvmat+' &nbsp; &nbsp; Grupo: '+grumat+'<br><br>El dar de baja la materia puede ocasionar que pierdas tu lugar en el grupo inscrito.<br><br>Se dar&aacute; de baja el laboratorio inscrito para esta materia.<br><br>\u00BFEst&aacute;s seguro de querer dar de BAJA la materia?</h5></div>';
+	}
+	else if (tipo='L')
+	{
+		mensaje='<div align="justify"><font color="#FF0000"><h4><b>Advertencia!</b></h4></font><h5><br>Baja de laboratorio: '+clvmat+' &nbsp; &nbsp; Grupo: '+grumat+'<br><br>El dar de baja este laboratorio puede ocasionar que pierdas tu lugar en el grupo.<br><br>\u00BFEst&aacute;s seguro de querer dar de BAJA el laboratorio?</h5></div>';
+	}
+	
+	bootbox.confirm(mensaje, function(result) 
+	{	
+		if (result==true)
+		{
+			if ($('#checkpago').is(":checked"))
+			{
+				costo=1;
+			}
+			else
+			{
+				costo=0;
+			}
+			
+			$.ajax({
+				url: "ajax/baja_matlab.php",
+				type: "post",
+				data: {"clvuni":clvuni,"clvmat":clvmat,"grumat":grumat,"tipo":tipo,"costo":costo},
+				dataType: 'json',
+				success: function(data)
+				{
+					if (data.status == "OK")
+					{
+						cargar_plan_estudios();
+					}
+					else
+					{
+						alert(data.status);
+						
+						$('#cargando_plan').hide();
+					}
+				},
+				error:function()
+				{
+					alert("Error al cargar el plan de estudios, intente otra vez...");
+				}
+			});
+		}
+	});
+}
+
+
+function mostrarGrupos(clvmat, cremat, creaut, estado) 
+{
+	$('#cargando_plan').show();
+	
+	$('#etiquetas').html('');
+	$('#leyenda_unica').hide();
+		
+	$.ajax({
+		url: "ajax/obtener_grupos.php",
+		type: "post",
+		data: {"clvuni":clvuni,"clvcar":clvcar,"clvmat":clvmat,"cremat":cremat,"creaut":creaut,"estado":estado},
+		dataType: 'json',
+		success: function(data)
+		{			
+			if (data.status == "OK")
+			{				
+				$('#grupos_materia').html(data.materia.grupos);
+				
+				$('#cargando_plan').hide();
+				
+				if (estado==8)
+				{
+					$('#leyenda_unica').show();
+				}
+				
+				$('#etiquetas').html(data.etiquetas);
+				$("#titulo_editar").html(data.materia.nombre);
+				$('#modalGrupos').modal('show');
+			}
+			else
+			{							
+				alert(data.status);
+			}
+		},
+		error:function()
+		{
+			alert("Error al cargar los grupos de la materia...");
+		}
+	});	
+}
+
+
+function altaMateria(clvmat, grumat, estado)
+{	
+	$('#cargando_plan').show();
+	
+	$.ajax({
+		url: "ajax/alta_materia.php",
+		type: "post",
+		data: {"clvuni":clvuni,"clvmat":clvmat,"grumat":grumat,"estado":estado},
+		dataType: 'json',
+		success: function(data)
+		{
+			console.log(data);
+			
+			if (data.status == "OK")
+			{
+				cargar_plan_estudios();
+				$('#modalGrupos').modal('hide');
+			}
+			else// if (data.status != "ERROR")	// ERROR - Ya existe el registro
+			{
+				$('#cargando_plan').hide();
+				alert(data.status);
+			}
+		},
+		error:function()
+		{
+			alert("Error al cargar los grupos de la materia...");
+		}
+	});	
+}
+
+
+function altaLaboratorio(clvmat, grumat, clvmatori)
+{	
+	$('#cargando_plan').show();
+	
+	$.ajax({
+		url: "ajax/alta_laboratorio.php",
+		type: "post",
+		data: {"clvuni":clvuni,"clvmat":clvmat,"grumat":grumat,"clvmatori":clvmatori},
+		dataType: 'json',
+		success: function(data)
+		{
+			if (data.status == "OK")
+			{
+				cargar_plan_estudios();
+				$('#modalGrupos').modal('hide');
+			}
+			else if (data.status != "ERROR")	// ERROR - Ya existe el registro
+			{
+				$('#cargando_plan').hide();
+				alert(data.status);
+			}
+		},
+		error:function()
+		{
+			alert("Error al cargar los grupos de la materia...");
+		}
+	});	
+}
+
+/*
+$("#boton_actualizar").click(function() 
+{	
+	$('#cargando_plan').show();
+	
+	$('#mpe').html('Correo Electr&oacute;nico Principal * &nbsp;');
+	$('#tpe').html('Tel&eacute;fonos particulares * &nbsp;');
+	$('#ese').html('<b>Encuesta de satisfacci&oacute;n</b>');
+		
+	var mp=$('#mailpri').val();
+	var mdp=$('#maildompri').val();
+	var ms=$('#mailsec').val();
+	var mds=$('#maildomsec').val();
+	var mu=$('#mailuaslp').val();
+	var mdu=$('#maildomuaslp').val();
+	
+	var tp=$('#telpar').val();
+	var tc=$('#telcel').val();
+	
+	var ep = $('input:radio[name=proceso]');
+	var eu = $('input:radio[name=uso]');
+		
+	if (mp=='')
+	{
+		$('#error_contacto').html('<h5><font color="RED">Proporciona una cuenta de correo que utilices con mayor frecuencia...</font></h5>');
+		$('#mpe').html('<font color="RED"><b>Correo Electr&oacute;nico Principal * &nbsp;</b></font>');
+	}
+	else if (tp=='' || tc=='')
+	{
+		$('#error_contacto').html('<h5><font color="RED">Proporciona un n&uacute;mero de tel&eacute;fono particular y tu n&uacute;mero de celular...</font></h5>');
+		$('#tpe').html('<font color="RED"><b>Tel&eacute;fonos particulares * &nbsp;</b></font>');
+	}
+	else if (ep.is(':checked') === false || eu.is(':checked') === false)
+	{
+		$('#error_contacto').html('<h5><font color="RED">No olvides contestar la encuesta de satisfacci&oacute;n, son solo dos preguntas...</font></h5>');
+		$('#ese').html('<font color="RED"><b>Encuesta de satisfacci&oacute;n</b></font>');
+	}
+	else
+	{
+		var mailpri=mp+'@'+mdp;
+		var mailsec=ms+'@'+mds;
+		var mailuaslp=mu+'@'+mdu;
+
+		var epv=ep.filter(':checked').val();
+		var euv=eu.filter(':checked').val();
+		var com=$('#comentarios').val();
+				
+		$.ajax({
+			url: "ajax/actualizar_contacto.php",
+			type: "post",
+			data: {"clvuni":clvuni,"mailpri":mailpri,"mailsec":mailsec,"mailuaslp":mailuaslp,"telpar":tp, "telcel":tc, "proceso":epv, "uso":euv, "comenta":com},
+			dataType: 'json',
+			success: function(data)
+			{				
+				if (data.status == "OK")
+				{
+					actual=1;
+					
+					$('#error_contacto').html('');
+					$('#tituloContacto').html('Informaci&oacute;n de contacto del alumno &nbsp; &nbsp; &nbsp; &nbsp; <font color="GREEN" size="3"><span class="glyphicon glyphicon-thumbs-up"></span> Actualizado</font>');
+					$('#modalContacto').modal('hide');
+				}
+				else
+				{
+					alert(data.status);
+				}
+			},
+			error:function()
+			{
+				alert("Error al actualizar los datos de contacto, intenta nuevamente...");
+			}
+		});
+	}
+	
+	$('#cargando_plan').hide();
+});
+*/
+
+function checarContacto()
+{
+	if (actual==1)
+	{
+		if (editar==1)
+		{
+			bootbox.confirm('<h4><font color="RED"><b>Atenci&oacute;n!</b></font></h4><br><h5>Una vez que imprimas tu horario, tu inscripci&oacute;n quedar&aacute; confirmada y no ya podr&aacute;s realizar cambios en sesiones posteriores.<br><br>&iquestDeseas continuar con la impresi&oacute;n?</h5>', function(result)
+			{	
+				if (result==true)
+				{
+					$(location).attr("href","http://imat.uaslp.mx/imat_v3/inscripcion/impresion/imprimir_horario.php");
+				}
+			});
+		}
+		else
+		{
+			$(location).attr("href","http://imat.uaslp.mx/imat_v3/inscripcion/impresion/imprimir_horario.php");
+		}
+	}
+	else
+	{
+		bootbox.alert('<h4><font color="RED"><b>Atenci&oacute;n!</b></font></h4><br><h5>Para poder imprimir tu horario y confirmar tu inscripci&oacute;n es necesario que actualices tus datos de contacto.<br><br>Haz clic en el bot&oacute;n <b>Actualizar datos</b>.</h5>', function() { });
+	}
+}
+
+
+
+

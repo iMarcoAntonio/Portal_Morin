@@ -1,0 +1,30 @@
+[
+    {
+	"proveedor": "1",
+        "name": "nombre",
+	"description": "desc",
+	"price": "precio",
+	"presentation": "pres"
+    },
+    {
+	"proveedor": "2",
+        "name": "nom",
+	"description": "descrip",
+	"price": "costo",
+	"presentation": "presentation"
+    },
+    {
+	"proveedor": "3",
+        "name": "Nombre",
+	"description": "descripcion",
+	"price": "price",
+	"presentation": "presentacion"
+    },
+    {
+        "name": "nombre",
+	"proveedor": "4",
+	"description": "description",
+	"price": "importe",
+	"presentation": "present"
+    },
+]
